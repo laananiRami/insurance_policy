@@ -13,4 +13,20 @@ public interface InsurancePolicyOutPutPort {
      */
     List<InsurancePolicy> findAll();
 
+    /**
+     * Recovers an insurance policy by their identifier
+     *
+     * @param id Police identifier
+     * @return Insurance policy found
+     */
+    InsurancePolicy findById(Integer id);
+
+    /**
+     * Save or update an insurance policy
+     *
+     * @param policy Insurance Police to be created
+     * @return Insurance policy created
+     */
+    InsurancePolicy save(InsurancePolicy policy);
+
 }

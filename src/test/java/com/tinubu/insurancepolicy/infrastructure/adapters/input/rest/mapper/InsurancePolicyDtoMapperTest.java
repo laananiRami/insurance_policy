@@ -4,6 +4,7 @@ import com.tinubu.insurancepolicy.domain.model.InsurancePolicy;
 import com.tinubu.insurancepolicy.domain.model.InsurancePolicyStatus;
 import com.tinubu.insurancepolicy.infrastructure.adapters.input.rest.dtos.InsurancePolicyRequestDTO;
 import com.tinubu.insurancepolicy.infrastructure.adapters.input.rest.dtos.InsurancePolicyResponseDTO;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,17 +23,31 @@ class InsurancePolicyDtoMapperTest {
     @Autowired
     private InsurancePolicyDtoMapper mapper;
 
+    LocalDate startDate;
+    LocalDate endDate;
+    LocalDateTime now;
+    String startDateString;
+    String endDateString;
+    String nowString;
+
+    @BeforeEach
+    void setup() {
+        startDate = LocalDate.of(2023, 1, 1);
+        endDate = LocalDate.of(2024, 1, 1);
+        now = LocalDateTime.now();
+        startDateString = startDate.toString();
+        endDateString = endDate.toString();
+        nowString = now.toString();
+    }
+
     @Test
     void shouldMapRequestDtoToEntity() {
         // Given
-        LocalDate startDate = LocalDate.of(2023, 1, 1);
-        LocalDate endDate = LocalDate.of(2024, 1, 1);
-
         InsurancePolicyRequestDTO requestDTO = new InsurancePolicyRequestDTO(
                 "Life Insurance Policy",
                 "ACTIVE",
-                startDate,
-                endDate
+                startDateString,
+                endDateString
         );
 
         // When
@@ -42,8 +57,8 @@ class InsurancePolicyDtoMapperTest {
         assertNotNull(result);
         assertEquals(requestDTO.name(), result.getName());
         assertEquals(InsurancePolicyStatus.ACTIVE, result.getStatus());
-        assertEquals(requestDTO.coverageStartDate(), result.getCoverageStartDate());
-        assertEquals(requestDTO.coverageEndDate(), result.getCoverageEndDate());
+        assertEquals(requestDTO.coverageStartDate(), result.getCoverageStartDate().toString());
+        assertEquals(requestDTO.coverageEndDate(), result.getCoverageEndDate().toString());
         // createdAt and updatedAt are not part of mapping from request
         assertNull(result.getCreatedAt());
         assertNull(result.getUpdatedAt());
@@ -53,10 +68,6 @@ class InsurancePolicyDtoMapperTest {
     @Test
     void shouldMapEntityToResponseDto() {
         // Given
-        LocalDate startDate = LocalDate.of(2023, 1, 1);
-        LocalDate endDate = LocalDate.of(2024, 1, 1);
-        LocalDateTime now = LocalDateTime.now();
-
         InsurancePolicy entity = InsurancePolicy.builder()
                 .id(1)
                 .name("Life Insurance Policy")
@@ -75,10 +86,10 @@ class InsurancePolicyDtoMapperTest {
         assertEquals(entity.getId(), result.id());
         assertEquals(entity.getName(), result.name());
         assertEquals(entity.getStatus().name(), result.status());
-        assertEquals(entity.getCoverageStartDate(), result.coverageStartDate());
-        assertEquals(entity.getCoverageEndDate(), result.coverageEndDate());
-        assertEquals(entity.getCreatedAt(), result.createdAt());
-        assertEquals(entity.getUpdatedAt(), result.updatedAt());
+        assertEquals(entity.getCoverageStartDate().toString(), result.coverageStartDate());
+        assertEquals(entity.getCoverageEndDate().toString(), result.coverageEndDate());
+        assertEquals(entity.getCreatedAt().toString(), result.createdAt());
+        assertEquals(entity.getUpdatedAt().toString(), result.updatedAt());
     }
 
     @Test
@@ -89,6 +100,4 @@ class InsurancePolicyDtoMapperTest {
         // Then
         assertNull(result);
     }
-
-
 }
