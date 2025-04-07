@@ -1,0 +1,184 @@
+openapi: 3.0.3
+info:
+  title: Insurance Policy API
+  description: |-
+    This API provides endpoints to manage insurance policies including creating, retrieving, and updating policies.
+  contact:
+    email: support@tinubu.com
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080
+    description: Local development server
+tags:
+  - name: policies
+    description: Operations about insurance policies
+paths:
+  /api/policies:
+    get:
+      tags:
+        - policies
+      summary: Get all insurance policies
+      description: Returns a list of all insurance policies
+      operationId: getAllPolicies
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/InsurancePolicyResponse'
+        '500':
+          description: Internal server error
+    post:
+      tags:
+        - policies
+      summary: Create a new insurance policy
+      description: Creates a new insurance policy in the system
+      operationId: createPolicy
+      requestBody:
+        description: Insurance policy object that needs to be added
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InsurancePolicyRequest'
+        required: true
+      responses:
+        '201':
+          description: Policy created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InsurancePolicyResponse'
+        '400':
+          description: Invalid input
+        '500':
+          description: Internal server error
+  /api/policies/{id}:
+    get:
+      tags:
+        - policies
+      summary: Find policy by ID
+      description: Returns a single insurance policy
+      operationId: getPolicyById
+      parameters:
+        - name: id
+          in: path
+          description: ID of the policy to return
+          required: true
+          schema:
+            type: integer
+            format: int32
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InsurancePolicyResponse'
+        '404':
+          description: Policy not found
+        '500':
+          description: Internal server error
+    put:
+      tags:
+        - policies
+      summary: Update an existing policy
+      description: Update an existing insurance policy by ID
+      operationId: updatePolicy
+      parameters:
+        - name: id
+          in: path
+          description: ID of the policy to update
+          required: true
+          schema:
+            type: integer
+            format: int32
+      requestBody:
+        description: Insurance policy details to update
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InsurancePolicyRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InsurancePolicyResponse'
+        '400':
+          description: Invalid input
+        '404':
+          description: Policy not found
+        '500':
+          description: Internal server error
+components:
+  schemas:
+    InsurancePolicyRequest:
+      type: object
+      required:
+        - name
+        - status
+        - coverageStartDate
+        - coverageEndDate
+      properties:
+        name:
+          type: string
+          example: "Life Insurance Policy"
+          description: The name of the insurance policy
+        status:
+          type: string
+          example: "ACTIVE"
+          description: Current status of the policy
+          enum:
+            - ACTIVE
+            - INACTIVE
+        coverageStartDate:
+          type: string
+          format: date
+          example: "2023-01-01"
+          description: Start date of policy coverage
+        coverageEndDate:
+          type: string
+          format: date
+          example: "2024-01-01"
+          description: End date of policy coverage
+    InsurancePolicyResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int32
+          example: 1
+          description: Unique identifier for the policy
+        name:
+          type: string
+          example: "Life Insurance Policy"
+          description: The name of the insurance policy
+        status:
+          type: string
+          example: "ACTIVE"
+          description: Current status of the policy
+        coverageStartDate:
+          type: string
+          format: date
+          example: "2023-01-01"
+          description: Start date of policy coverage
+        coverageEndDate:
+          type: string
+          format: date
+          example: "2024-01-01"
+          description: End date of policy coverage
+        createdAt:
+          type: string
+          format: date-time
+          example: "2023-01-01T12:00:00Z"
+          description: Timestamp when the policy was created
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2023-01-01T12:00:00Z"
+          description: Timestamp when the policy was last updated

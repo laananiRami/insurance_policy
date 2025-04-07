@@ -1,145 +1,118 @@
 package com.tinubu.insurancepolicy.infrastructure.adapters.output.persistence;
 
+import com.tinubu.insurancepolicy.domain.exception.PolicyNotFoundException;
 import com.tinubu.insurancepolicy.domain.model.InsurancePolicy;
-import com.tinubu.insurancepolicy.domain.model.InsurancePolicyStatus;
-import com.tinubu.insurancepolicy.domain.service.GetAllInsurancePoliciesUseCaseImpl;
-import com.tinubu.insurancepolicy.infrastructure.adapters.input.rest.InsurancePolicyRestAdapter;
-import com.tinubu.insurancepolicy.infrastructure.adapters.input.rest.dtos.InsurancePolicyResponseDTO;
-import com.tinubu.insurancepolicy.infrastructure.adapters.input.rest.mapper.InsurancePolicyDtoMapper;
+import com.tinubu.insurancepolicy.infrastructure.adapters.output.persistence.entity.InsurancePolicyEntity;
+import com.tinubu.insurancepolicy.infrastructure.adapters.output.persistence.mapper.InsurancePolicyMapper;
+import com.tinubu.insurancepolicy.infrastructure.adapters.output.persistence.repository.InsurancePolicyRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.http.MediaType;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
-import static com.tinubu.insurancepolicy.infrastructure.adapters.input.rest.config.ApiPathsConfig.POLICIES_BASE_PATH;
-import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @ExtendWith(MockitoExtension.class)
 class InsurancePolicyPersistenceAdapterTest {
 
-    private MockMvc mockMvc;
+    @Mock
+    private InsurancePolicyRepository insurancePolicyRepository;
 
     @Mock
-    private InsurancePolicyPersistenceAdapter persistenceAdapter;
+    private InsurancePolicyMapper insurancePolicyMapper;
 
-    @Mock
-    private InsurancePolicyDtoMapper dtoMapper;
-
-    private InsurancePolicyRestAdapter restAdapter;
+    private InsurancePolicyPersistenceAdapter adapter;
 
     @BeforeEach
     void setUp() {
-        GetAllInsurancePoliciesUseCaseImpl getAllPoliciesUseCase =
-                new GetAllInsurancePoliciesUseCaseImpl(persistenceAdapter);
-
-        restAdapter = new InsurancePolicyRestAdapter(getAllPoliciesUseCase, dtoMapper);
-
-        // Set up MockMvc
-        mockMvc = MockMvcBuilders
-                .standaloneSetup(restAdapter)
-                .build();
+        adapter = new InsurancePolicyPersistenceAdapter(insurancePolicyRepository, insurancePolicyMapper);
     }
 
     @Test
-    void getAllPolicies_ShouldReturnPoliciesList() throws Exception {
+    void test_findAll_return_all_policies() {
         // Given
-        LocalDate startDate1 = LocalDate.of(2023, 1, 1);
-        LocalDate endDate1 = LocalDate.of(2024, 1, 1);
-        LocalDateTime now = LocalDateTime.now();
+        InsurancePolicyEntity entity1 = new InsurancePolicyEntity();
+        InsurancePolicyEntity entity2 = new InsurancePolicyEntity();
+        List<InsurancePolicyEntity> entities = Arrays.asList(entity1, entity2);
 
-        InsurancePolicy policy1 = InsurancePolicy.builder()
-                .id(1)
-                .name("Life Insurance")
-                .status(InsurancePolicyStatus.ACTIVE)
-                .coverageStartDate(startDate1)
-                .coverageEndDate(endDate1)
-                .createdAt(now)
-                .updatedAt(now)
-                .build();
+        InsurancePolicy policy1 = new InsurancePolicy();
+        InsurancePolicy policy2 = new InsurancePolicy();
 
-        InsurancePolicy policy2 = InsurancePolicy.builder()
-                .id(2)
-                .name("Health Insurance")
-                .status(InsurancePolicyStatus.INACTIVE)
-                .coverageStartDate(startDate1.plusMonths(1))
-                .coverageEndDate(endDate1.plusMonths(1))
-                .createdAt(now)
-                .updatedAt(now)
-                .build();
+        when(insurancePolicyRepository.findAll()).thenReturn(entities);
+        when(insurancePolicyMapper.toDomain(entity1)).thenReturn(policy1);
+        when(insurancePolicyMapper.toDomain(entity2)).thenReturn(policy2);
 
-        List<InsurancePolicy> policies = Arrays.asList(policy1, policy2);
+        // When
+        List<InsurancePolicy> result = adapter.findAll();
 
-        InsurancePolicyResponseDTO responseDTO1 = new InsurancePolicyResponseDTO(
-                1,
-                "Life Insurance",
-                "ACTIVE",
-                startDate1,
-                endDate1,
-                now,
-                now
-        );
-
-        InsurancePolicyResponseDTO responseDTO2 = new InsurancePolicyResponseDTO(
-                2,
-                "Health Insurance",
-                "PENDING",
-                startDate1.plusMonths(1),
-                endDate1.plusMonths(1),
-                now,
-                now
-        );
-
-        when(persistenceAdapter.findAll()).thenReturn(policies);
-        when(dtoMapper.toResponseDto(policy1)).thenReturn(responseDTO1);
-        when(dtoMapper.toResponseDto(policy2)).thenReturn(responseDTO2);
-
-        // When & Then
-        mockMvc.perform(MockMvcRequestBuilders.get(POLICIES_BASE_PATH)
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andDo(print())
-                .andExpect(status().isOk())
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$", hasSize(2)))
-                .andExpect(jsonPath("$[0].id", is(1)))
-                .andExpect(jsonPath("$[0].name", is("Life Insurance")))
-                .andExpect(jsonPath("$[0].status", is("ACTIVE")))
-                .andExpect(jsonPath("$[1].id", is(2)))
-                .andExpect(jsonPath("$[1].name", is("Health Insurance")))
-                .andExpect(jsonPath("$[1].status", is("PENDING")));
-
-        verify(persistenceAdapter, times(1)).findAll();
-        verify(dtoMapper, times(1)).toResponseDto(policy1);
-        verify(dtoMapper, times(1)).toResponseDto(policy2);
+        // Then
+        assertEquals(2, result.size());
+        assertTrue(result.contains(policy1));
+        assertTrue(result.contains(policy2));
+        verify(insurancePolicyRepository).findAll();
+        verify(insurancePolicyMapper, times(2)).toDomain(any(InsurancePolicyEntity.class));
     }
 
     @Test
-    void getAllPolicies_ShouldReturnEmptyList_WhenNoPoliciesExist() throws Exception {
+    void test_findById_WithExistingId() {
         // Given
-        when(persistenceAdapter.findAll()).thenReturn(Collections.emptyList());
+        Integer id = 1;
+        InsurancePolicyEntity entity = new InsurancePolicyEntity();
+        InsurancePolicy expectedPolicy = new InsurancePolicy();
 
-        // When & Then
-        mockMvc.perform(MockMvcRequestBuilders.get(POLICIES_BASE_PATH)
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andDo(print())
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(0)));
+        when(insurancePolicyRepository.findById(id)).thenReturn(Optional.of(entity));
+        when(insurancePolicyMapper.toDomain(entity)).thenReturn(expectedPolicy);
 
-        verify(persistenceAdapter, times(1)).findAll();
-        verify(dtoMapper, never()).toResponseDto(any());
+        // When
+        InsurancePolicy result = adapter.findById(id);
+
+        // Then
+        assertNotNull(result);
+        assertEquals(expectedPolicy, result);
+        verify(insurancePolicyRepository).findById(id);
+        verify(insurancePolicyMapper).toDomain(entity);
+    }
+
+    @Test
+    void test_findById_WithNonExistingId_throwException() {
+        // Arrange
+        Integer id = 999;
+        when(insurancePolicyRepository.findById(id)).thenReturn(Optional.empty());
+
+        // Act & Assert
+        assertThrows(PolicyNotFoundException.class,
+                () -> adapter.findById(id));
+
+        verify(insurancePolicyRepository).findById(id);
+        verify(insurancePolicyMapper, never()).toDomain(any());
+    }
+
+    @Test
+    void test_save_returnSavedPolicy() {
+        // Arrange
+        InsurancePolicy policyToSave = new InsurancePolicy();
+        InsurancePolicyEntity entityToSave = new InsurancePolicyEntity();
+        InsurancePolicyEntity savedEntity = new InsurancePolicyEntity();
+        InsurancePolicy expectedSavedPolicy = new InsurancePolicy();
+
+        when(insurancePolicyMapper.toEntity(policyToSave)).thenReturn(entityToSave);
+        when(insurancePolicyRepository.save(entityToSave)).thenReturn(savedEntity);
+        when(insurancePolicyMapper.toDomain(savedEntity)).thenReturn(expectedSavedPolicy);
+
+        // Act
+        InsurancePolicy result = adapter.save(policyToSave);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(expectedSavedPolicy, result);
+        verify(insurancePolicyMapper).toEntity(policyToSave);
+        verify(insurancePolicyRepository).save(entityToSave);
+        verify(insurancePolicyMapper).toDomain(savedEntity);
     }
 }
